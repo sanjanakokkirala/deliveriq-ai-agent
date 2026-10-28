@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DeliverIQ – Delivery Performance Root-Cause Agent</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f4f6fb;--card:#fff;--tx:#18202f;--mu:#66708a;--bd:#e1e5ef;--ac:#2874f0;--rd:#d93a4a;--am:#d98a0b;--gn:#1c9a5b;--c1:#7a3fd1;--c2:#2874f0;--c3:#d93a4a;--c4:#d98a0b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1320;--card:#171d2d;--tx:#e8ecf6;--mu:#98a3bf;--bd:#27304a;--ac:#6ea1ff;--rd:#ff6b78;--am:#f2b04a;--gn:#4cd08d;--c1:#b48cff;--c2:#6ea1ff;--c3:#ff6b78;--c4:#f2b04a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1320;--card:#171d2d;--tx:#e8ecf6;--mu:#98a3bf;--bd:#27304a;--ac:#6ea1ff;--rd:#ff6b78;--am:#f2b04a;--gn:#4cd08d;--c1:#b48cff;--c2:#6ea1ff;--c3:#ff6b78;--c4:#f2b04a;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.w{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:17px;margin:0 0 10px}
+.mu{color:var(--mu)}.sub{margin:0 0 18px}
+.grid{display:grid;gap:14px}.k{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:14px}
+.kv{font-size:26px;font-weight:700}.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;color:#fff;white-space:nowrap}
+.hi{background:var(--rd)}.md{background:var(--am)}.lo{background:var(--gn)}
+.sc{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:800px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--bd);font-size:14px;vertical-align:middle}th{color:var(--mu);font-weight:600}
+tr.t{cursor:pointer}tr.t:hover,tr.sel{background:color-mix(in srgb,var(--ac) 10%,transparent)}
+ol.al{padding-left:20px;margin:0}ol.al li{margin-bottom:8px}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 12px;border-radius:8px;cursor:pointer}
+button:hover{border-color:var(--ac)}
+.ag{background:color-mix(in srgb,var(--ac) 9%,var(--card));border-radius:10px;padding:12px;margin-top:10px;white-space:pre-wrap;min-height:60px}
+input[type=range]{width:100%}.bar{height:8px;border-radius:4px;background:var(--bd);overflow:hidden}.bar i{display:block;height:100%}
+.lg span{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:13px}.lg i{width:10px;height:10px;border-radius:2px;display:inline-block}
+code{background:var(--bd);padding:1px 6px;border-radius:4px;font-size:13px}svg{display:block}
+</style></head><body><div class="w">
+<h1>🚚 DeliverIQ</h1>
+<p class="mu sub">AI root-cause agent for a Flipkart-style e-commerce network: capacity looks adequate, yet deliveries are late. Where does the delay really come from? (Synthetic illustrative data.)</p>
+<div class="grid k" id="kpis"></div>
+<div class="c lg" style="margin-top:14px"><h2>Levers: improve the whole network</h2>
+<div class="grid two" style="gap:18px">
+<div><div class="mu">Close staffing gap: <b id="v1">0</b>%</div><input type="range" id="s1" min="0" max="100" value="0"></div>
+<div><div class="mu">Localize inventory (cut transfers): <b id="v2">0</b>%</div><input type="range" id="s2" min="0" max="100" value="0"></div>
+<div><div class="mu">Optimize dispatch &amp; routes: <b id="v3">0</b>%</div><input type="range" id="s3" min="0" max="100" value="0"></div></div>
+<p class="mu" style="margin:8px 0 0;font-size:13px">Late-order estimates scale with the remaining excess delay hours; they are model estimates, not guarantees.</p></div>
+<div class="c sc lg"><h2>Fulfilment nodes – ranked by late orders (click a row)</h2>
+<div style="margin-bottom:8px"><span><i style="background:var(--c1)"></i>Inventory allocation</span><span><i style="background:var(--c2)"></i>Pick &amp; pack</span><span><i style="background:var(--c3)"></i>Dispatch wait</span><span><i style="background:var(--c4)"></i>Last mile</span></div>
+<table id="tbl"></table></div>
+<div class="grid two">
+<div class="c"><h2 id="dt">Detail</h2><div id="detail"></div></div>
+<div class="c"><h2>Agent</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button data-q="rc">Root causes</button><button data-q="cp">Capacity paradox</button><button data-q="ap">Action plan</button></div>
+<div class="ag" id="agent">Ask the agent. It reasons over the live numbers above.</div>
+<h2 style="margin-top:16px">What drives late orders? (correlation across nodes)</h2><div id="cor"></div></div>
+</div>
+<div class="c"><h2>Algorithm used by the agent</h2><ol class="al">
+<li><b>Ingest</b> per fulfilment node: orders/day, capacity, pickers staffed vs needed, share of orders needing inter-warehouse transfer, pick-pack hours, dispatch wait, last-mile hours, km per delivery, late-order % and complaints.</li>
+<li><b>Decompose</b> end-to-end delay into four stages and compute excess over target: <code>allocation = 0.18 h × transfer %</code>, <code>pick-pack = hours − 4</code>, <code>dispatch = wait − 2</code>, <code>last mile = hours − 8</code>.</li>
+<li><b>Capacity paradox test</b>: network utilization = orders ÷ capacity, plus the spread across nodes. Adequate average with high spread means imbalance, not shortage.</li>
+<li><b>Attribute</b> the root cause per node as the stage with the largest excess; confirm network-wide with Pearson correlation of each stage&rsquo;s excess against the late-order rate.</li>
+<li><b>Staffing check</b>: <code>fill = staffed ÷ needed</code>; below 90% explains slow pick-pack.</li>
+<li><b>Rank</b> nodes by late orders = <code>orders × late %</code>.</li>
+<li><b>Recommend</b> per cause: staffing → shift or hire pickers; inventory → re-slot and allocate from nearest stock; dispatch/last mile → wave planning, route re-optimization, more riders; spare-capacity nodes absorb overflow.</li>
+<li><b>Simulate</b> levers: new late % = old × (remaining excess ÷ old excess), re-aggregated across the network.</li>
+</ol></div></div>
+<script>
+const $=i=>document.getElementById(i);
+const N=[
+{n:"Bengaluru FC",o:42000,cap:60000,sf:520,nd:500,tr:8,pk:4.2,dp:2.2,lm:8.5,km:4.2,lt:9,cm:14},
+{n:"Hyderabad FC",o:38000,cap:45000,sf:340,nd:440,tr:12,pk:7.5,dp:2.5,lm:9,km:4.5,lt:24,cm:38},
+{n:"Mumbai (Bhiwandi) FC",o:52000,cap:80000,sf:700,nd:690,tr:31,pk:4.8,dp:2.4,lm:9.5,km:4.6,lt:26,cm:41},
+{n:"Delhi NCR FC",o:60000,cap:90000,sf:880,nd:900,tr:10,pk:4.3,dp:5.5,lm:12,km:7.8,lt:31,cm:47},
+{n:"Kolkata FC",o:20000,cap:35000,sf:210,nd:200,tr:9,pk:4.0,dp:2.0,lm:8.2,km:4.0,lt:7,cm:10},
+{n:"Chennai FC",o:30000,cap:40000,sf:300,nd:310,tr:14,pk:4.6,dp:2.7,lm:10.5,km:4.4,lt:14,cm:19},
+{n:"Pune FC",o:18000,cap:40000,sf:200,nd:150,tr:6,pk:3.8,dp:2.0,lm:8,km:3.9,lt:5,cm:8},
+{n:"Lucknow FC",o:25000,cap:32000,sf:190,nd:260,tr:22,pk:6.8,dp:3.0,lm:10,km:4.8,lt:28,cm:40}];
+const ST=[["Inventory allocation","--c1","Inventory mismatch: orders allocated to a warehouse without local stock, forcing transfers"],["Pick & pack","--c2","Warehouse staffing: too few pickers for the order load"],["Dispatch wait","--c3","Dispatch and linehaul bottleneck: vehicles and waves not matched to volume"],["Last mile","--c4","Route and last-mile inefficiency: long routes and too few riders"]];
+const pc=(a,b)=>{const n=a.length,ma=a.reduce((s,v)=>s+v,0)/n,mb=b.reduce((s,v)=>s+v,0)/n;let c=0,x=0,y=0;a.forEach((v,i)=>{c+=(v-ma)*(b[i]-mb);x+=(v-ma)**2;y+=(b[i]-mb)**2});return c/Math.sqrt(x*y||1)};
+let cur=null;
+function ex(n,f1,f2,f3){const fill=n.sf/n.nd,gap=Math.max(0,1-fill);
+ const e=[.18*n.tr*(1-f2),Math.max(0,n.pk-4)*(1-f1*Math.min(1,gap>0?1:0)),Math.max(0,n.dp-2)*(1-f3),Math.max(0,n.lm-8)*(1-f3)];return e}
+function run(){const f1=$("s1").value/100,f2=$("s2").value/100,f3=$("s3").value/100;
+ $("v1").textContent=$("s1").value;$("v2").textContent=$("s2").value;$("v3").textContent=$("s3").value;
+ N.forEach(n=>{n.e0=ex(n,0,0,0);n.e=ex(n,f1,f2,f3);n.t0=n.e0.reduce((s,v)=>s+v,0);n.t=n.e.reduce((s,v)=>s+v,0);
+  n.util=n.o/n.cap;n.fill=n.sf/n.nd;n.lt1=n.t0>0?n.lt*(n.t/n.t0):n.lt;n.late=n.o*n.lt1/100;n.late0=n.o*n.lt/100;
+  n.dom=n.e0.indexOf(Math.max(...n.e0));n.lv=n.lt>=20?"hi":n.lt>=10?"md":"lo"});
+ N.sort((a,b)=>b.late0-a.late0);cur=cur?N.find(x=>x.n==cur.n):N[0]}
+const W=(a,f)=>a.reduce((t,n)=>t+f(n)*n.o,0)/a.reduce((t,n)=>t+n.o,0);
+function render(){run();
+ const u=N.reduce((t,n)=>t+n.o,0)/N.reduce((t,n)=>t+n.cap,0),l0=W(N,n=>n.lt),l1=W(N,n=>n.lt1);
+ $("kpis").innerHTML=[["Network utilization",(u*100).toFixed(0)+"%"],["Late orders (now)",l0.toFixed(1)+"%"],["Late orders (with levers)",l1.toFixed(1)+"%"],["Complaints /1000",W(N,n=>n.cm).toFixed(0)]].map(k=>`<div class="c" style="margin:0"><div class="mu">${k[0]}</div><div class="kv">${k[1]}</div></div>`).join("");
+ const mx=11;
+ const bar=n=>{let x=0;return `<svg width="130" height="14">${n.e.map((v,i)=>{const w=v/mx*130,r=`<rect x="${x}" y="1" width="${w}" height="12" fill="var(${ST[i][1]})"/>`;x+=w;return r}).join("")}</svg>`};
+ $("tbl").innerHTML="<tr><th>Node</th><th>Util.</th><th>Staff fill</th><th>Transfers</th><th>Excess delay (h)</th><th>Late %</th><th>Main cause</th></tr>"+N.map(n=>`<tr class="t${n==cur?" sel":""}" data-n="${n.n}"><td>${n.n}</td><td>${(n.util*100).toFixed(0)}%</td><td>${(n.fill*100).toFixed(0)}%</td><td>${n.tr}%</td><td>${bar(n)} ${n.t.toFixed(1)}</td><td><span class="tag ${n.lv}">${n.lt1.toFixed(0)}%</span></td><td>${n.t0<1.5?"Healthy":ST[n.dom][0]}</td></tr>`).join("");
+ const r=[0,1,2,3].map(i=>pc(N.map(n=>n.e0[i]),N.map(n=>n.lt)));
+ $("cor").innerHTML=r.map((v,i)=>`<div style="margin:6px 0"><div style="display:flex;justify-content:space-between"><span>${ST[i][0]}</span><b>r = ${v.toFixed(2)}</b></div><div class="bar"><i style="width:${Math.max(0,v)*100}%;background:var(${ST[i][1]})"></i></div></div>`).join("");
+ detail()}
+function acts(n){const a=[],s=n.e0;
+ if(n.fill<.9)a.push(`Staffing: fill ${(n.nd-n.sf)} open picker roles or shift staff from spare-capacity nodes (Pune has the most room)`);
+ if(s[0]>2)a.push(`Inventory: re-slot top sellers locally and allocate from nearest stock; cut transfers from ${n.tr}% to under 10%`);
+ if(s[2]>1.5)a.push("Dispatch: add wave dispatch and linehaul vehicles to cut wait to 2 h");
+ if(s[3]>1.5||n.km>5)a.push(`Last mile: re-optimize routes (${n.km} km per delivery vs 4.0 benchmark) and add riders`);
+ if(n.util>.8)a.push("Shift overflow orders to nodes under 70% utilization");
+ return a.length?a:["Maintain current operations; no action needed"]}
+function detail(){const n=cur;$("dt").textContent=n.n+" – "+(n.t0<1.5?"Healthy":ST[n.dom][0]);
+ $("detail").innerHTML=n.e0.map((v,i)=>`<div style="margin:6px 0"><div style="display:flex;justify-content:space-between"><span>${ST[i][0]}</span><b>+${v.toFixed(1)} h</b></div><div class="bar"><i style="width:${Math.min(100,v/6*100)}%;background:var(${ST[i][1]})"></i></div></div>`).join("")+
+ `<p><b>Root cause:</b> ${n.t0<1.5?"No major excess in any stage.":ST[n.dom][2]+"."}</p><p class="mu">Utilization ${(n.util*100).toFixed(0)}% (${n.cap.toLocaleString()}/day capacity), staff fill ${(n.fill*100).toFixed(0)}%, ${n.cm} complaints per 1000 orders.</p><b>Recommended actions</b><ul>${acts(n).map(a=>`<li>${a}</li>`).join("")}</ul>`}
+$("tbl").addEventListener("click",e=>{const t=e.target.closest("tr.t");if(t){cur=N.find(x=>x.n==t.dataset.n);render()}});
+["s1","s2","s3"].forEach(i=>$(i).oninput=render);
+const A={
+ rc:()=>"Root causes by node:\n"+N.filter(n=>n.t0>=1.5).map(n=>`• ${n.n}: ${ST[n.dom][0]} (+${n.e0[n.dom].toFixed(1)} h), ${n.lt}% late`).join("\n"),
+ cp:()=>{const u=N.reduce((t,n)=>t+n.o,0)/N.reduce((t,n)=>t+n.cap,0),spare=N.filter(n=>n.util<.7).map(n=>n.n),hot=N.filter(n=>n.util>.8).map(n=>n.n);return `Network utilization is only ${(u*100).toFixed(0)}%, so capacity is not the problem. The problem is imbalance and mismatch: ${hot.join(", ")} run above 80% while ${spare.join(", ")} sit below 70%. Delays come from understaffed pick-pack, stock held in the wrong warehouse, and slow dispatch and routes, not from a lack of total capacity.`},
+ ap:()=>"Priority actions:\n"+N.filter(n=>n.t0>=1.5).slice(0,4).map((n,i)=>`${i+1}. ${n.n}: ${acts(n)[0]}`).join("\n")+"\nUse the lever sliders to see the effect on late orders."
+};
+document.querySelectorAll("button[data-q]").forEach(b=>b.onclick=()=>$("agent").textContent=A[b.dataset.q]());
+render();
+</script></body></html>
